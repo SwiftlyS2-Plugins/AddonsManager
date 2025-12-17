@@ -1,0 +1,10 @@
+{
+    "CServerSideClient::SteamID": {
+        "linux": 187,
+        "windows": 187
+    },
+    "NetworkGameServer::Addons": {
+        "linux": 336,
+        "windows": 336
+    }
+}

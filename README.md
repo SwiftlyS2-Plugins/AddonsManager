@@ -6,23 +6,10 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build Status">
-  <img src="https://img.shields.io/github/downloads/Swiftly Development Team/AddonsManager/total" alt="Downloads">
-  <img src="https://img.shields.io/github/stars/Swiftly Development Team/AddonsManager?style=flat&logo=github" alt="Stars">
-  <img src="https://img.shields.io/github/license/Swiftly Development Team/AddonsManager" alt="License">
+  <img src="https://img.shields.io/github/downloads/SwiftlyS2-Plugins/AddonsManager/total" alt="Downloads">
+  <img src="https://img.shields.io/github/stars/SwiftlyS2-Plugins/AddonsManager?style=flat&logo=github" alt="Stars">
+  <img src="https://img.shields.io/github/license/SwiftlyS2-Plugins/AddonsManager" alt="License">
 </p>
-
-## Getting Started (delete me)
-
-1. **Edit `PluginMetadata` Attribute**  
-   - Set your plugin's `Id`, `Name`, `Version`, `Author` and `Description`.
-2. **Edit `AddonsManager.csproj`**  
-   - Set the `<AssemblyName>` property to match your plugin's main class name.
-   - Add any additional dependencies as needed.
-3. **Implement your plugin logic** in C#.
-   - Place your main plugin class in the root of the project.
-   - Use the SwiftlyS2 managed API to interact with the game and core.
-4. **Add resources**  
-   - Place any required files in the `gamedata`, `templates`, or `translations` folders as needed.
 
 ## Building
 
@@ -34,3 +21,7 @@
 
 - Use the `dotnet publish -c Release` command to build and package your plugin.
 - Distribute the generated zip file or the contents of the `build/publish` directory.
+
+## Acknowledgements
+
+This plugin is a port of Source2ZE's MultiAddonManager for SwiftlyS2. It is released under GPL with credits given to the original code writers.

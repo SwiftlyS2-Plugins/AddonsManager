@@ -14,7 +14,7 @@ public partial class AddonsManager
 
     public string BuildAddonPath(string addonId, bool legacy = false)
     {
-        return $"{Core.GameFileSystem.GetSearchPath("EXECUTABLE_PATH", GetSearchPathTypes_t.GET_SEARCH_PATH_ALL, 1)}steamapps/workshop/content/730/{addonId}/{addonId}{(legacy ? "_dir" : string.Empty)}.vpk";
+        return $"{Core.GameFileSystem.GetSearchPath("EXECUTABLE_PATH", GetSearchPathTypes_t.GET_SEARCH_PATH_ALL, 1)}steamapps/workshop/content/730/{addonId}/{addonId}{(legacy ? string.Empty : "_dir")}.vpk";
     }
 
     public bool UnmountAddon(string addonId)

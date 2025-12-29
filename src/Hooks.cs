@@ -43,9 +43,9 @@ public partial class AddonsManager
                             WorkshopMapId = string.Empty;
                         }
                     }
-                    else if (kv->GetName().ToLower() != "changelevel")
+                    else if (!kv->GetName().Equals("changelevel", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        if (kv->GetName().ToLower() == "map_workshop")
+                        if (kv->GetName().Equals("map_workshop", StringComparison.CurrentCultureIgnoreCase))
                         {
                             WorkshopMapId = kv->GetString("customgamemode", "");
                         }
@@ -72,7 +72,8 @@ public partial class AddonsManager
                         addons = [WorkshopMapId, .. addons];
                     }
 
-                    pRequest->Addons.Value = string.Join(',', addons);
+                    pRequest->Addons = string.Join(',', addons);
+
                     next()(hostStateManager, pRequest);
                 };
             }

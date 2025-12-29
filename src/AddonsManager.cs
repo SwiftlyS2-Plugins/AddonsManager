@@ -6,11 +6,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
 using SwiftlyS2.Shared.Events;
 using SwiftlyS2.Shared.SteamAPI;
-using SwiftlyS2.Shared.GameEvents;
-using SwiftlyS2.Shared.Misc;
-using SwiftlyS2.Shared.GameEventDefinitions;
 using SwiftlyS2.Shared.Commands;
-using SwiftlyS2.Shared.SchemaDefinitions;
 
 namespace AddonsManager;
 

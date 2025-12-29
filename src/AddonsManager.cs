@@ -59,6 +59,8 @@ public partial class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
                 await Task.Delay(100);
             }
         });
+
+        SetupHooks();
     }
 
     public override void Unload()
@@ -73,7 +75,7 @@ public partial class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
         Core.GameFileSystem.RemoveSearchPath("", "GAME");
         Core.GameFileSystem.RemoveSearchPath("", "DEFAULT_WRITE_PATH");
 
-        if (SteamAPIInitialized) RefreshAddons();
+        RefreshAddons();
     }
 
     private Callback<DownloadItemResult_t>? _downloadItemResult;
@@ -85,5 +87,11 @@ public partial class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
 
         _downloadItemResult = Callback<DownloadItemResult_t>.Create(OnDownloadItemResult);
         RefreshAddons(true);
+    }
+
+    [Command("searchpath")]
+    public void ViewSearchPaths(ICommandContext _)
+    {
+        Core.GameFileSystem.PrintSearchPaths();
     }
 }

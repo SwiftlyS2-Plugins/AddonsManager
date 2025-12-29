@@ -27,9 +27,10 @@ public partial class AddonsManager
         {
             unsafe
             {
-                return (pHostStateManager, pRequest) =>
+                return (hostStateManager, pRequest) =>
                 {
-                    if (pRequest->pKV == null)
+                    var kv = pRequest->pKV;
+                    if (kv == null)
                     {
                         bool valveMap = core.GameFileSystem.FileExists($"maps/{pRequest->LevelName.Value}.vpk", "MOD");
 
@@ -37,16 +38,16 @@ public partial class AddonsManager
                         {
                             WorkshopMapId = pRequest->Addons.Value;
                         }
-                        else
+                        else if (valveMap)
                         {
                             WorkshopMapId = string.Empty;
                         }
                     }
-                    else if (pRequest->pKV->GetName() != "ChangeLevel")
+                    else if (kv->GetName().ToLower() != "changelevel")
                     {
-                        if (pRequest->pKV->GetName() == "map_workshop")
+                        if (kv->GetName().ToLower() == "map_workshop")
                         {
-                            WorkshopMapId = pRequest->pKV->GetString("customgamemode", "");
+                            WorkshopMapId = kv->GetString("customgamemode", "");
                         }
                         else
                         {
@@ -61,20 +62,18 @@ public partial class AddonsManager
 
                     if (Config.CurrentValue.Addons.Count == 0)
                     {
-                        next()(pHostStateManager, pRequest);
+                        next()(hostStateManager, pRequest);
                         return;
                     }
 
-                    if (WorkshopMapId.Length > 0)
+                    var addons = Config.CurrentValue.Addons;
+                    if (WorkshopMapId != string.Empty && !addons.Contains(WorkshopMapId))
                     {
-                        pRequest->Addons.Value = string.Join(',', Config.CurrentValue.Addons);
-                    }
-                    else
-                    {
-                        pRequest->Addons.Value = string.Join(',', [WorkshopMapId, .. Config.CurrentValue.Addons]);
+                        addons = [WorkshopMapId, .. addons];
                     }
 
-                    next()(pHostStateManager, pRequest);
+                    pRequest->Addons.Value = string.Join(',', addons);
+                    next()(hostStateManager, pRequest);
                 };
             }
         });

@@ -19,7 +19,15 @@ public partial class AddonsManager
 
     public bool UnmountAddon(string addonId)
     {
-        if (!Core.GameFileSystem.RemoveSearchPath(BuildAddonPath(addonId), "GAME")) return false;
+        var vpkPath = BuildAddonPath(addonId);
+        if (!Core.GameFileSystem.RemoveSearchPath(vpkPath, "GAME"))
+        {
+            vpkPath = BuildAddonPath(addonId, true);
+            if (!Core.GameFileSystem.RemoveSearchPath(vpkPath, "GAME"))
+            {
+                return false;
+            }
+        }
 
         MountedAddons.Remove(addonId);
         return true;
@@ -128,7 +136,10 @@ public partial class AddonsManager
 
         foreach (string addonId in MountedAddons.ToArray().Reverse())
         {
-            UnmountAddon(addonId);
+            if (!UnmountAddon(addonId))
+            {
+                Core.Logger.LogWarning($"Failed to unmount addon with ID: {addonId}");
+            }
         }
 
         foreach (string addonId in Config.CurrentValue.Addons)
@@ -146,7 +157,7 @@ public partial class AddonsManager
     {
         if (WorkshopMapId.Length == 0 || Core.GameFileSystem.IsDirectory(WorkshopMapId, "OFFICIAL_ADDONS"))
         {
-            Core.Engine.ExecuteCommand("map " + Core.Engine.GlobalVars.MapName.Value);
+            Core.Engine.ExecuteCommand("changelevel " + Core.Engine.GlobalVars.MapName.Value);
         }
         else
         {

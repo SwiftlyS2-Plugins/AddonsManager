@@ -1,12 +1,12 @@
 {
     "HostStateRequest": {
         "lib": "engine2",
-        "windows": "48 89 74 24 ? 57 48 83 EC ? 33 F6 48 8B FA 48 39 35",
-        "linux": "48 8B C4 55 41 55 41 56"
+        "windows": "48 89 74 24 10 57 48 83 EC ? 33 F6 48 8B FA",
+        "linux": "55 48 89 E5 41 57 41 56 41 55 41 54 49 89 FC 53 48 89 F3 48 83 EC ? 48 83 7F ? ? 74 ? 8B 3D"
     },
     "ReplyConnection": {
         "lib": "engine2",
-        "windows": "48 89 74 24 ? 57 48 83 EC ? 33 F6 48 8B FA 48 39 35",
+        "windows": "48 8B C4 55 41 55 41 56",
         "linux": "55 48 8D 05 ? ? ? ? 66 0F EF C0 48 89 E5 41 57 41 56 41 55 41 54 49 89 FC"
     }
 }

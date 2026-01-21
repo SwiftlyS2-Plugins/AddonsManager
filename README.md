@@ -22,6 +22,23 @@
 - Use the `dotnet publish -c Release` command to build and package your plugin.
 - Distribute the generated zip file or the contents of the `build/publish` directory.
 
+## Adding Addons
+
+- To add an addon for players to download, modify `addons/swiftlys2/configs/plugins/AddonsManager/config.jsonc` at key `Main.Addons` with Workshop ID's:
+
+```jsonc
+{
+  "Main": {
+    "Addons": [
+      "WORKSHOP_ID1",
+      "WORKSHOP_ID2", 
+      // ...
+    ],
+    // ...
+  }
+}
+```
+
 ## Acknowledgements
 
 This plugin is a port of Source2ZE's MultiAddonManager for SwiftlyS2. It is released under GPL with credits given to the original code writers.

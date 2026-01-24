@@ -22,6 +22,12 @@
 - Use the `dotnet publish -c Release` command to build and package your plugin.
 - Distribute the generated zip file or the contents of the `build/publish` directory.
 
+## Commands
+
+```
+sw_downloadaddon <workshop_id> # Download a workshop addon via command
+```
+
 ## Adding Addons
 
 - To add an addon for players to download, modify `addons/swiftlys2/configs/plugins/AddonsManager/config.jsonc` at key `Main.Addons` with Workshop ID's:

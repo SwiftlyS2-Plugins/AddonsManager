@@ -10,7 +10,7 @@ using SwiftlyS2.Shared.Commands;
 
 namespace AddonsManager;
 
-[PluginMetadata(Id = "AddonsManager", Version = "1.0.0", Name = "Addons Manager", Author = "Swiftly Development Team", Description = "No description.")]
+[PluginMetadata(Id = "AddonsManager", Version = "1.0.1", Name = "Addons Manager", Author = "Swiftly Development Team", Description = "No description.")]
 public partial class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
 {
     public static IOptionsMonitor<AddonsConfig> Config { get; private set; } = null!;
@@ -89,5 +89,29 @@ public partial class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
     public void ViewSearchPaths(ICommandContext _)
     {
         Core.GameFileSystem.PrintSearchPaths();
+    }
+
+    [Command("downloadaddon")]
+    public void DownloadAddonCommand(ICommandContext context)
+    {
+        if (context.IsSentByPlayer)
+        {
+            context.Reply("[AddonsManager] This command can only be used from the server console.");
+            return;
+        }
+
+        if (!SteamAPIInitialized)
+        {
+            context.Reply("[AddonsManager] Steam API is not initialized.");
+            return;
+        }
+
+        if (context.Args.Length < 1)
+        {
+            context.Reply("[AddonsManager] Usage: downloadaddon <workshop_id>");
+            return;
+        }
+
+        DownloadAddon(context.Args[0], true, true);
     }
 }

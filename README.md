@@ -26,6 +26,7 @@
 
 ```
 sw_downloadaddon <workshop_id> # Download a workshop addon via command
+sw_searchpath # View all the VPK Search Paths
 ```
 
 ## Adding Addons

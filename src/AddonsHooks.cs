@@ -61,7 +61,12 @@ public class AddonsHooks
                     else if (!pRequest->m_pKV->GetName().Equals("changelevel", StringComparison.CurrentCultureIgnoreCase))
                     {
                         if (pRequest->m_pKV->GetName().Equals("map_workshop", StringComparison.CurrentCultureIgnoreCase))
-                            Utilities.SetCurrentWorkshopMap(pRequest->m_pKV->GetString("customgamemode", ""));
+                        {
+                            if (!string.IsNullOrEmpty(pRequest->m_Addons.Value))
+                                Utilities.SetCurrentWorkshopMap(pRequest->m_Addons.Value);
+                            else
+                                Utilities.ClearCurrentWorkshopMap();
+                        }
                         else
                             Utilities.ClearCurrentWorkshopMap();
                     }
@@ -164,7 +169,7 @@ public class AddonsHooks
         Core.GameFileSystem.RemoveSearchPath("", "GAME");
         Core.GameFileSystem.RemoveSearchPath("", "DEFAULT_WRITE_PATH");
 
-        WorkshopManager.RefreshAddons(true);
+        WorkshopManager.RefreshAddons();
     }
 
     [ServerNetMessageInternalHandler]

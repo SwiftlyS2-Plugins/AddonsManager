@@ -25,7 +25,7 @@ public class AddonsWorkshopManager
         core.Registrator.Register(this);
     }
 
-    public bool MountAddon(string addonName, bool bAddToTail = false)
+    public bool MountAddon(string addonName, bool bAddToTail = false, bool bAllowRedownload = true)
     {
         if (addonName == string.Empty) return false;
 
@@ -51,7 +51,7 @@ public class AddonsWorkshopManager
             DownloadAddon(addonName, true, true);
             return false;
         }
-        else if (Config.CurrentValue.RedownloadAddonOnMount)
+        else if (bAllowRedownload && Config.CurrentValue.RedownloadAddonOnMount)
         {
             DownloadAddon(addonName, false, true);
         }
@@ -70,6 +70,7 @@ public class AddonsWorkshopManager
         }
         else
         {
+            // The filesystem API requires the base .vpk path (without _dir); it appends _dir and chunk suffixes internally
             addonPath = Utilities.BuildAddonPath(addonName, true);
         }
 
@@ -96,7 +97,7 @@ public class AddonsWorkshopManager
             return false;
         }
 
-        string addonPath = Utilities.BuildAddonPath(addonName);
+        string addonPath = Utilities.BuildAddonPath(addonName, true);
 
         if (!Core.GameFileSystem.RemoveSearchPath(addonPath, "GAME"))
             return false;
@@ -179,7 +180,7 @@ public class AddonsWorkshopManager
 
         foreach (var addon in Config.CurrentValue.Addons)
         {
-            if (!MountAddon(addon))
+            if (!MountAddon(addon, bAllowRedownload: reloadMap))
             {
                 bAllAddonsMounted = false;
                 Core.Logger.LogError("Failed to mount addon {AddonName}.", addon);

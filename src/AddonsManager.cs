@@ -11,7 +11,7 @@ using AddonsManager.Clients;
 
 namespace AddonsManager;
 
-[PluginMetadata(Id = "AddonsManager", Version = "2.0.2", Name = "Addons Manager", Author = "Swiftly Development Team", Description = "No description.")]
+[PluginMetadata(Id = "AddonsManager", Version = "2.0.3", Name = "Addons Manager", Author = "Swiftly Development Team", Description = "No description.")]
 public class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
 {
     public IServiceProvider? ServiceProvider;

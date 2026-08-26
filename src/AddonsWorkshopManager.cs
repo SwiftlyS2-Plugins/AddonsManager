@@ -258,7 +258,7 @@ public class AddonsWorkshopManager : IDisposable
             }
             else
             {
-                Core.Logger.LogError("Failed to download addon {AddonName}. Steam API returned result: {ResultCode}.\nError: {ErrorMessage}", pCallback.m_nPublishedFileId, pCallback.m_eResult, SteamErrorMessage.Errors[(int)pCallback.m_eResult]);
+                Core.Logger.LogError("Failed to download addon {AddonName}. Steam API returned result: {ResultCode}.\nError: {ErrorMessage}", pCallback.m_nPublishedFileId, pCallback.m_eResult, SteamErrorMessage.Get((int)pCallback.m_eResult));
             }
 
             if (!Utilities.GetDownloadQueue().Contains(pCallback.m_nPublishedFileId))

@@ -110,21 +110,28 @@ public class AddonsWorkshopManager
 
     public void PrintDownloadProgress()
     {
-        var downloadQueue = Utilities.GetDownloadQueue();
-        if (downloadQueue.Count == 0) return;
-
-        if (!SteamGameServerUGC.GetItemDownloadInfo(downloadQueue.Peek(), out var bytesDownloaded, out var bytesTotal))
+        try
         {
-            Core.Logger.LogError("Failed to get download info for addon {AddonName}.", downloadQueue.Peek());
-            return;
+            var downloadQueue = Utilities.GetDownloadQueue();
+            if (downloadQueue.Count == 0) return;
+
+            if (!SteamGameServerUGC.GetItemDownloadInfo(downloadQueue.Peek(), out var bytesDownloaded, out var bytesTotal))
+            {
+                Core.Logger.LogError("Failed to get download info for addon {AddonName}.", downloadQueue.Peek());
+                return;
+            }
+
+            float MBDownloaded = bytesDownloaded / (1024f * 1024f);
+            float MBTotal = bytesTotal / (1024f * 1024f);
+
+            float progress = bytesDownloaded / (float)bytesTotal * 100f;
+
+            Core.Logger.LogDebug("Downloading addon {AddonName}: {MBDownloaded}/{MBTotal} MB ({Progress}%)", downloadQueue.Peek(), MBDownloaded.ToString("0.00"), MBTotal.ToString("0.00"), progress.ToString("0.00"));
         }
-
-        float MBDownloaded = bytesDownloaded / (1024f * 1024f);
-        float MBTotal = bytesTotal / (1024f * 1024f);
-
-        float progress = bytesDownloaded / (float)bytesTotal * 100f;
-
-        Core.Logger.LogDebug("Downloading addon {AddonName}: {MBDownloaded}/{MBTotal} MB ({Progress}%)", downloadQueue.Peek(), MBDownloaded.ToString("0.00"), MBTotal.ToString("0.00"), progress.ToString("0.00"));
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Unhandled exception while printing download progress.");
+        }
     }
 
     public bool DownloadAddon(string pszAddon, bool bImportant, bool bForce)
@@ -197,8 +204,15 @@ public class AddonsWorkshopManager
     [EventListener<EventDelegates.OnSteamAPIActivated>]
     public void OnSteamAPIActivated()
     {
-        _downloadItemResult = Callback<DownloadItemResult_t>.Create(OnAddonDownloaded);
-        RefreshAddons(true);
+        try
+        {
+            _downloadItemResult = Callback<DownloadItemResult_t>.Create(OnAddonDownloaded);
+            RefreshAddons(true);
+        }
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Unhandled exception in OnSteamAPIActivated handler.");
+        }
     }
 
     public void ReloadMap()
@@ -215,29 +229,36 @@ public class AddonsWorkshopManager
 
     public void OnAddonDownloaded(DownloadItemResult_t pCallback)
     {
-        // For now we also need to check for none since it's a SwiftlyS2 issue here (probably, not sure yet)
-        if (pCallback.m_eResult == EResult.k_EResultOK || pCallback.m_eResult == EResult.k_EResultNone)
+        try
         {
-            Core.Logger.LogInformation("Addon {AddonName} downloaded successfully.", pCallback.m_nPublishedFileId);
-        }
-        else
-        {
-            Core.Logger.LogError("Failed to download addon {AddonName}. Steam API returned result: {ResultCode}.\nError: {ErrorMessage}", pCallback.m_nPublishedFileId, pCallback.m_eResult, SteamErrorMessage.Errors[(int)pCallback.m_eResult]);
-        }
+            // For now we also need to check for none since it's a SwiftlyS2 issue here (probably, not sure yet)
+            if (pCallback.m_eResult == EResult.k_EResultOK || pCallback.m_eResult == EResult.k_EResultNone)
+            {
+                Core.Logger.LogInformation("Addon {AddonName} downloaded successfully.", pCallback.m_nPublishedFileId);
+            }
+            else
+            {
+                Core.Logger.LogError("Failed to download addon {AddonName}. Steam API returned result: {ResultCode}.\nError: {ErrorMessage}", pCallback.m_nPublishedFileId, pCallback.m_eResult, SteamErrorMessage.Errors[(int)pCallback.m_eResult]);
+            }
 
-        if (!Utilities.GetDownloadQueue().Contains(pCallback.m_nPublishedFileId))
-        {
-            Core.Logger.LogDebug("Received download result for addon {AddonName} which is not in the download queue, ignoring.", pCallback.m_nPublishedFileId);
-            return;
+            if (!Utilities.GetDownloadQueue().Contains(pCallback.m_nPublishedFileId))
+            {
+                Core.Logger.LogDebug("Received download result for addon {AddonName} which is not in the download queue, ignoring.", pCallback.m_nPublishedFileId);
+                return;
+            }
+
+            Utilities.GetDownloadQueue().Dequeue();
+            var bFound = Utilities.GetImportantDownloads().Remove(pCallback.m_nPublishedFileId);
+
+            if (bFound && Utilities.GetImportantDownloads().Count == 0)
+            {
+                Core.Logger.LogInformation("All important addons have been downloaded, reloading map {mapName}.", Core.Engine.GlobalVars.MapName.Value);
+                ReloadMap();
+            }
         }
-
-        Utilities.GetDownloadQueue().Dequeue();
-        var bFound = Utilities.GetImportantDownloads().Remove(pCallback.m_nPublishedFileId);
-
-        if (bFound && Utilities.GetImportantDownloads().Count == 0)
+        catch (Exception ex)
         {
-            Core.Logger.LogInformation("All important addons have been downloaded, reloading map {mapName}.", Core.Engine.GlobalVars.MapName.Value);
-            ReloadMap();
+            Core.Logger.LogError(ex, "Unhandled exception in OnAddonDownloaded callback for addon {AddonId}.", pCallback.m_nPublishedFileId);
         }
     }
 }

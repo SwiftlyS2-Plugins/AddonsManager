@@ -16,6 +16,7 @@ public class AddonsWorkshopManager : IDisposable
     private AddonsUtilities Utilities;
     private IOptionsMonitor<AddonsConfig> Config;
     private Callback<DownloadItemResult_t>? _downloadItemResult;
+    private bool _importantDownloadSucceeded;
 
     public AddonsWorkshopManager(ISwiftlyCore core, AddonsUtilities utils, IOptionsMonitor<AddonsConfig> config)
     {
@@ -252,7 +253,9 @@ public class AddonsWorkshopManager : IDisposable
         try
         {
             // For now we also need to check for none since it's a SwiftlyS2 issue here (probably, not sure yet)
-            if (pCallback.m_eResult == EResult.k_EResultOK || pCallback.m_eResult == EResult.k_EResultNone)
+            var bSuccess = pCallback.m_eResult == EResult.k_EResultOK || pCallback.m_eResult == EResult.k_EResultNone;
+
+            if (bSuccess)
             {
                 Core.Logger.LogInformation("Addon {AddonName} downloaded successfully.", pCallback.m_nPublishedFileId);
             }
@@ -261,20 +264,30 @@ public class AddonsWorkshopManager : IDisposable
                 Core.Logger.LogError("Failed to download addon {AddonName}. Steam API returned result: {ResultCode}.\nError: {ErrorMessage}", pCallback.m_nPublishedFileId, pCallback.m_eResult, SteamErrorMessage.Get((int)pCallback.m_eResult));
             }
 
-            if (!Utilities.GetDownloadQueue().Contains(pCallback.m_nPublishedFileId))
+            if (!Utilities.RemoveFromDownloadQueue(pCallback.m_nPublishedFileId))
             {
                 Core.Logger.LogDebug("Received download result for addon {AddonName} which is not in the download queue, ignoring.", pCallback.m_nPublishedFileId);
                 return;
             }
 
-            Utilities.GetDownloadQueue().Dequeue();
-            var bFound = Utilities.GetImportantDownloads().Remove(pCallback.m_nPublishedFileId);
+            if (!Utilities.GetImportantDownloads().Remove(pCallback.m_nPublishedFileId)) return;
 
-            if (bFound && Utilities.GetImportantDownloads().Count == 0)
+            _importantDownloadSucceeded |= bSuccess;
+
+            if (Utilities.GetImportantDownloads().Count > 0) return;
+
+            // Only reload when something actually downloaded, otherwise the addon is queued again and loops forever
+            if (_importantDownloadSucceeded)
             {
                 Core.Logger.LogInformation("All important addons have been downloaded, reloading map {mapName}.", Core.Engine.GlobalVars.MapName.Value);
                 ReloadMap();
             }
+            else
+            {
+                Core.Logger.LogWarning("All important addon downloads failed, skipping map reload.");
+            }
+
+            _importantDownloadSucceeded = false;
         }
         catch (Exception ex)
         {

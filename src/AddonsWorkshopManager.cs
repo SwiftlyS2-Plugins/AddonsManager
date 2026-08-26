@@ -10,7 +10,7 @@ using SwiftlyS2.Shared.SteamAPI;
 
 namespace AddonsManager.SteamWorkshop;
 
-public class AddonsWorkshopManager
+public class AddonsWorkshopManager : IDisposable
 {
     private ISwiftlyCore Core;
     private AddonsUtilities Utilities;
@@ -23,6 +23,26 @@ public class AddonsWorkshopManager
         Utilities = utils;
         Config = config;
         core.Registrator.Register(this);
+    }
+
+    public void Dispose()
+    {
+        // Release the Steam callback & unmount addons
+        try
+        {
+            _downloadItemResult?.Dispose();
+            _downloadItemResult = null;
+
+            var mountedAddons = new List<string>(Utilities.GetMountedAddons());
+            foreach (var addon in mountedAddons.Reverse<string>())
+            {
+                UnmountAddon(addon);
+            }
+        }
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Unhandled exception while disposing AddonsWorkshopManager.");
+        }
     }
 
     public bool MountAddon(string addonName, bool bAddToTail = false, bool bAllowRedownload = true)

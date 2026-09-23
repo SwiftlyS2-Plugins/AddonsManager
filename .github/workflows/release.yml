@@ -1,0 +1,214 @@
+﻿name: Build and Release
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: true
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[build]')
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from PluginMetadata
+        id: version
+        run: |
+          # Find Version = "x.y.z" in any .cs file
+          VERSION=$(grep -roh 'Version *= *"[^"]*"' --include="*.cs" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not find PluginMetadata Version"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Found version: $VERSION"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: "**/*.csproj"
+
+      - name: Restore and Publish
+        run: |
+          # Find all csproj files with CreateZip target (these produce release artifacts)
+          PROJECTS=$(grep -l "CreateZip" $(find . -name "*.csproj") 2>/dev/null || true)
+
+          if [ -z "$PROJECTS" ]; then
+            echo "::error::No projects with CreateZip target found"
+            exit 1
+          fi
+
+          echo "Found projects to build:"
+          echo "$PROJECTS"
+
+          # Build each project (dependencies like shared API will be built automatically)
+          for PROJECT in $PROJECTS; do
+            echo "Building: $PROJECT"
+            dotnet restore "$PROJECT"
+            dotnet publish "$PROJECT" -c Release
+          done
+
+      - name: Find and prepare release zips
+        id: zip
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Find all zip files created by build
+          ZIP_FILES=$(find . -name "*.zip" -type f)
+          ZIP_COUNT=$(echo "$ZIP_FILES" | wc -l | tr -d ' ')
+
+          if [ -z "$ZIP_FILES" ] || [ "$ZIP_COUNT" -eq 0 ]; then
+            echo "::error::No .zip files found after build"
+            exit 1
+          fi
+
+          echo "Found $ZIP_COUNT zip file(s)"
+
+          # Prepare output directory
+          mkdir -p release-artifacts
+
+          # If only one zip, it's the main plugin - no identification needed
+          if [ "$ZIP_COUNT" -eq 1 ]; then
+            ZIP_FILE=$(echo "$ZIP_FILES" | head -1)
+            BASENAME=$(basename "$ZIP_FILE" .zip)
+            NEW_NAME="${BASENAME}-v${VERSION}.zip"
+            mv "$ZIP_FILE" "release-artifacts/$NEW_NAME"
+            echo "Single plugin: $NEW_NAME"
+          else
+            # Multiple zips - must identify main plugin via ConfigureSharedInterface
+            MAIN_CS=$(grep -rl "ConfigureSharedInterface" --include="*.cs" . 2>/dev/null | head -1)
+
+            if [ -z "$MAIN_CS" ]; then
+              echo "::error::Multiple plugins found but cannot identify main plugin (no ConfigureSharedInterface found)"
+              exit 1
+            fi
+
+            MAIN_DIR=$(dirname "$MAIN_CS")
+            echo "Main plugin identified in: $MAIN_DIR"
+
+            MAIN_FOUND=false
+
+            for ZIP_FILE in $ZIP_FILES; do
+              BASENAME=$(basename "$ZIP_FILE" .zip)
+              NEW_NAME="${BASENAME}-v${VERSION}.zip"
+
+              # Check if this zip is from the main plugin directory
+              ZIP_DIR=$(dirname "$ZIP_FILE")
+              if [[ "$ZIP_DIR" == *"src-plugin"* ]] || [[ "$ZIP_DIR" == "$MAIN_DIR"* ]] || [[ "$MAIN_DIR" == *"$BASENAME"* ]]; then
+                echo "Main plugin: $NEW_NAME"
+                MAIN_FOUND=true
+              else
+                echo "Perk plugin: $NEW_NAME"
+              fi
+
+              mv "$ZIP_FILE" "release-artifacts/$NEW_NAME"
+            done
+
+            if [ "$MAIN_FOUND" = false ]; then
+              echo "::error::Could not match main plugin to any zip file"
+              exit 1
+            fi
+          fi
+
+          echo "all_zips=$(ls release-artifacts/*.zip | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
+      - name: Determine release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          REPO_NAME="${{ github.event.repository.name }}"
+
+          # Find next available tag/build number
+          BASE_TAG="v${VERSION}"
+          TAG="$BASE_TAG"
+          TITLE="${REPO_NAME} | ${BASE_TAG}"
+          BUILD_NUM=1
+
+          while gh release view "$TAG" &>/dev/null; do
+            BUILD_NUM=$((BUILD_NUM + 1))
+            TAG="${BASE_TAG}-${BUILD_NUM}"
+            TITLE="${REPO_NAME} | ${BASE_TAG}#${BUILD_NUM}"
+            echo "Tag $BASE_TAG exists, trying: $TAG"
+          done
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "Determined tag: $TAG (Title: $TITLE)"
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          NEW_TAG="${{ steps.tag.outputs.tag }}"
+          CHANGELOG=""
+
+          # Extract changelog section if file exists (matches both [v1.0.1] and [1.0.1])
+          if [ -f "CHANGELOG.md" ]; then
+            CHANGELOG=$(awk -v ver="$VERSION" '
+              /^## \[/ {
+                if (found) exit
+                if ($0 ~ "\\[v?" ver "\\]") { found=1; next }
+              }
+              found { print }
+            ' CHANGELOG.md)
+          fi
+
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="Release v$VERSION"
+          fi
+
+          # Get the most recent existing tag
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          # Build release body
+          {
+            echo "body<<EOF"
+            echo "$CHANGELOG"
+            echo ""
+            if [ -n "$PREV_TAG" ]; then
+              echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${NEW_TAG}"
+            fi
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${{ steps.tag.outputs.tag }}"
+          TITLE="${{ steps.tag.outputs.title }}"
+
+          # Auto-detect pre-release (contains -)
+          PRERELEASE_FLAG=""
+          if [[ "$VERSION" == *-* ]]; then
+            PRERELEASE_FLAG="--prerelease"
+            echo "Detected pre-release version"
+          fi
+
+          echo "Creating release: $TAG (Title: $TITLE)"
+
+          gh release create "$TAG" \
+            --title "$TITLE" \
+            --notes "${{ steps.changelog.outputs.body }}" \
+            $PRERELEASE_FLAG \
+            release-artifacts/*.zip
+
+          echo "Release $TAG created successfully!"

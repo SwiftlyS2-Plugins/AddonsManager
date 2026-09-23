@@ -2,6 +2,11 @@ namespace AddonsManager.Structs;
 
 public static class SteamErrorMessage
 {
+    public static string Get(int code)
+    {
+        return code >= 0 && code < Errors.Count ? Errors[code] : $"Unknown Steam error code {code}.";
+    }
+
     public static readonly List<string> Errors = [
         "No result.",
         "Success.",

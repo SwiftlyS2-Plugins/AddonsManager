@@ -68,65 +68,94 @@ public class AddonsClients
     [EventListener<EventDelegates.OnClientConnected>]
     public void OnClientConnected(IOnClientConnectedEvent @event)
     {
-        var addons = GetClientAddons();
-        if (addons.Count == 0) return;
-
-        var player = Core.PlayerManager.GetPlayer(@event.PlayerId);
-        if (player == null) return;
-
-        var clientInfo = GetClientInfo(player.UnauthorizedSteamID);
-
-        if (!string.IsNullOrEmpty(clientInfo.CurrentPendingAddon))
+        try
         {
-            if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - clientInfo.LastActiveTime > Config.CurrentValue.ExtraAddonsTimeoutInSeconds * 1000)
+            var addons = GetClientAddons();
+            if (addons.Count == 0) return;
+
+            var player = Core.PlayerManager.GetPlayer(@event.PlayerId);
+            if (player == null) return;
+
+            var clientInfo = GetClientInfo(player.UnauthorizedSteamID);
+
+            if (!string.IsNullOrEmpty(clientInfo.CurrentPendingAddon))
             {
-                Core.Logger.LogDebug("Client {SteamID} has reconnected after the timeout or did not receive the addon message, will not add addon {addonId} to the downloaded list.", player.UnauthorizedSteamID, clientInfo.CurrentPendingAddon);
-            }
-            else
-            {
-                Core.Logger.LogDebug("Client {SteamID} has connected within the interval with the pending addon {addonId}, will send next addon in SendNetMessage hook.", player.UnauthorizedSteamID, clientInfo.CurrentPendingAddon);
-                clientInfo.DownloadedAddons.Add(clientInfo.CurrentPendingAddon);
+                if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - clientInfo.LastActiveTime > Config.CurrentValue.ExtraAddonsTimeoutInSeconds * 1000)
+                {
+                    Core.Logger.LogDebug("Client {SteamID} has reconnected after the timeout or did not receive the addon message, will not add addon {addonId} to the downloaded list.", player.UnauthorizedSteamID, clientInfo.CurrentPendingAddon);
+                }
+                else
+                {
+                    Core.Logger.LogDebug("Client {SteamID} has connected within the interval with the pending addon {addonId}, will send next addon in SendNetMessage hook.", player.UnauthorizedSteamID, clientInfo.CurrentPendingAddon);
+                    clientInfo.DownloadedAddons.Add(clientInfo.CurrentPendingAddon);
+                }
+
+                clientInfo.CurrentPendingAddon = string.Empty;
             }
 
-            clientInfo.CurrentPendingAddon = string.Empty;
+            clientInfo.LastActiveTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
-
-        clientInfo.LastActiveTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Unhandled exception in OnClientConnected handler for player {PlayerId}.", @event.PlayerId);
+        }
     }
 
     [EventListener<EventDelegates.OnClientDisconnected>]
     public void OnClientDisconnected(IOnClientDisconnectedEvent @event)
     {
-        var player = Core.PlayerManager.GetPlayer(@event.PlayerId);
-        if (player == null) return;
+        try
+        {
+            var player = Core.PlayerManager.GetPlayer(@event.PlayerId);
+            if (player == null) return;
 
-        var clientInfo = GetClientInfo(player.UnauthorizedSteamID);
-        // Store slot→steamId so SendNetMessage can find the client after PM removal.
-        _slotToSteamId[@event.PlayerId] = player.UnauthorizedSteamID;
-        clientInfo.LastActiveTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var clientInfo = GetClientInfo(player.UnauthorizedSteamID);
+            // Store slot→steamId so SendNetMessage can find the client after PM removal.
+            _slotToSteamId[@event.PlayerId] = player.UnauthorizedSteamID;
+            clientInfo.LastActiveTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        }
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Unhandled exception in OnClientDisconnected handler for player {PlayerId}.", @event.PlayerId);
+        }
     }
 
     [EventListener<EventDelegates.OnClientPutInServer>]
     public void OnClientPutInServer(IOnClientPutInServerEvent @event)
     {
-        var player = Core.PlayerManager.GetPlayer(@event.PlayerId);
-        if (player == null) return;
+        try
+        {
+            var player = Core.PlayerManager.GetPlayer(@event.PlayerId);
+            if (player == null) return;
 
-        var clientInfo = GetClientInfo(player.UnauthorizedSteamID);
-        Core.Logger.LogDebug("[OnClientPutInServer] steamId={SteamID} cacheEnabled={Cache} downloadedAddons=[{Downloaded}]",
-            player.UnauthorizedSteamID, Config.CurrentValue.CacheClientsWithAddons, string.Join(",", clientInfo.DownloadedAddons));
+            var clientInfo = GetClientInfo(player.UnauthorizedSteamID);
+            Core.Logger.LogDebug("[OnClientPutInServer] steamId={SteamID} cacheEnabled={Cache} downloadedAddons=[{Downloaded}]",
+                player.UnauthorizedSteamID, Config.CurrentValue.CacheClientsWithAddons, string.Join(",", clientInfo.DownloadedAddons));
 
-        if (Config.CurrentValue.CacheClientsWithAddons) return;
+            if (Config.CurrentValue.CacheClientsWithAddons) return;
 
-        clientInfo.DownloadedAddons.Clear();
+            clientInfo.DownloadedAddons.Clear();
+        }
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Unhandled exception in OnClientPutInServer handler for player {PlayerId}.", @event.PlayerId);
+        }
     }
 
     [GameEventHandler(HookMode.Pre)]
     public HookResult OnPlayerDisconnect(EventPlayerDisconnect @event)
     {
-        if (Config.CurrentValue.BlockDisconnectMessages == false) return HookResult.Continue;
+        try
+        {
+            if (Config.CurrentValue.BlockDisconnectMessages == false) return HookResult.Continue;
 
-        if (@event.Reason == (short)ENetworkDisconnectionReason.NETWORK_DISCONNECT_LOOPSHUTDOWN) return HookResult.Stop;
-        return HookResult.Continue;
+            if (@event.Reason == (short)ENetworkDisconnectionReason.NETWORK_DISCONNECT_LOOPSHUTDOWN) return HookResult.Stop;
+            return HookResult.Continue;
+        }
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Unhandled exception in OnPlayerDisconnect handler.");
+            return HookResult.Continue;
+        }
     }
 }

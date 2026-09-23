@@ -3,6 +3,7 @@ using SwiftlyS2.Shared;
 using AddonsManager.Config;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using AddonsManager.Utils;
 using AddonsManager.SteamWorkshop;
 using AddonsManager.Commands;
@@ -15,6 +16,7 @@ namespace AddonsManager;
 public class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
 {
     public IServiceProvider? ServiceProvider;
+    private CancellationTokenSource? _downloadProgressTimer;
 
     public override void ConfigureSharedInterface(IInterfaceManager interfaceManager)
     {
@@ -51,10 +53,24 @@ public class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
         _ = ServiceProvider.GetRequiredService<AddonsClients>();
         _ = ServiceProvider.GetRequiredService<AddonsHooks>();
 
-        Core.Scheduler.RepeatBySeconds(1.0f, workshopManager.PrintDownloadProgress);
+        _downloadProgressTimer = Core.Scheduler.RepeatBySeconds(1.0f, workshopManager.PrintDownloadProgress);
     }
 
     public override void Unload()
     {
+        // Stop the timer, then dispose (releases the Steam callback & mounted addons)
+        try
+        {
+            _downloadProgressTimer?.Cancel();
+            _downloadProgressTimer?.Dispose();
+            _downloadProgressTimer = null;
+
+            (ServiceProvider as IDisposable)?.Dispose();
+            ServiceProvider = null;
+        }
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Unhandled exception while unloading AddonsManager.");
+        }
     }
 }

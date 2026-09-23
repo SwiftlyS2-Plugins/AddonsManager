@@ -63,4 +63,16 @@ public class AddonsUtilities
     {
         return ImportantDownloads;
     }
+
+    // Callbacks can arrive out of order, so the finished addon isn't always the one waiting first
+    public bool RemoveFromDownloadQueue(PublishedFileId_t addonId)
+    {
+        if (!DownloadQueue.Contains(addonId)) return false;
+
+        var remaining = DownloadQueue.Where(id => id != addonId).ToList();
+        DownloadQueue.Clear();
+        foreach (var id in remaining) DownloadQueue.Enqueue(id);
+
+        return true;
+    }
 }

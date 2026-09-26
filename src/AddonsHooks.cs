@@ -26,10 +26,12 @@ public class AddonsHooks
     public unsafe delegate void SetPendingHostStateRequestDelegate(nint hostStateManager, CHostStateRequest* pRequest);
     public delegate void ReplyConnection(nint server, nint client);
     public delegate ulong ScriptGetAddon();
+    public delegate nint OnSteamServerConnect(nint pThis);
 
     private IUnmanagedFunction<SetPendingHostStateRequestDelegate>? _SetPendingHostStateRequestDelegate;
     private IUnmanagedFunction<ReplyConnection>? _ReplyConnection;
     private IUnmanagedFunction<ScriptGetAddon>? _ScriptGetAddon;
+    private IUnmanagedFunction<OnSteamServerConnect>? _OnSteamServerConnect;
 
     public AddonsHooks(ISwiftlyCore core, AddonsWorkshopManager workshopManager, AddonsClients clients, AddonsUtilities utils, IOptionsMonitor<AddonsConfig> config)
     {
@@ -42,6 +44,7 @@ public class AddonsHooks
         _SetPendingHostStateRequestDelegate = core.Memory.GetUnmanagedFunctionByAddress<SetPendingHostStateRequestDelegate>(core.GameData.GetSignature("HostStateRequest"));
         _ReplyConnection = core.Memory.GetUnmanagedFunctionByAddress<ReplyConnection>(core.GameData.GetSignature("ReplyConnection"));
         _ScriptGetAddon = core.Memory.GetUnmanagedFunctionByAddress<ScriptGetAddon>(core.GameData.GetSignature("ScriptGetAddon"));
+        _OnSteamServerConnect = core.Memory.GetUnmanagedFunctionByAddress<OnSteamServerConnect>(core.GameData.GetSignature("OnSteamServerConnect"));
 
         _SetPendingHostStateRequestDelegate.AddHook((next) =>
         {
@@ -216,6 +219,16 @@ public class AddonsHooks
                     Core.Logger.LogError(ex, "Unhandled exception in ScriptGetAddon hook; falling back to original function.");
                     return next()();
                 }
+            };
+        });
+
+        _OnSteamServerConnect.AddHook((next) =>
+        {
+            return (pThis) =>
+            {
+                var returnValue = next()(pThis);
+                WorkshopManager.OnSteamServerConnect();
+                return returnValue;
             };
         });
     }

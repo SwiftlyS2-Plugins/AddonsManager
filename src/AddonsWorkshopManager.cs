@@ -222,8 +222,7 @@ public class AddonsWorkshopManager : IDisposable
         }
     }
 
-    [EventListener<EventDelegates.OnSteamAPIActivated>]
-    public void OnSteamAPIActivated()
+    public void OnSteamServerConnect()
     {
         try
         {
@@ -232,7 +231,7 @@ public class AddonsWorkshopManager : IDisposable
         }
         catch (Exception ex)
         {
-            Core.Logger.LogError(ex, "Unhandled exception in OnSteamAPIActivated handler.");
+            Core.Logger.LogError(ex, "Unhandled exception in OnSteamServerConnect handler.");
         }
     }
 

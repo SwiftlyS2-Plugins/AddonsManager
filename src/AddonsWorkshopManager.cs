@@ -17,6 +17,7 @@ public class AddonsWorkshopManager : IDisposable
     private IOptionsMonitor<AddonsConfig> Config;
     private Callback<DownloadItemResult_t>? _downloadItemResult;
     private bool _importantDownloadSucceeded;
+    private bool _steamApiConnected { get; set; } = false;
 
     public AddonsWorkshopManager(ISwiftlyCore core, AddonsUtilities utils, IOptionsMonitor<AddonsConfig> config)
     {
@@ -224,8 +225,10 @@ public class AddonsWorkshopManager : IDisposable
 
     public void OnSteamServerConnect()
     {
+        if(_steamApiConnected == true) return;
         try
         {
+            _steamApiConnected = true;
             _downloadItemResult = Callback<DownloadItemResult_t>.Create(OnAddonDownloaded);
             RefreshAddons(true);
         }

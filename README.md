@@ -38,13 +38,24 @@ sw_searchpath # View all the VPK Search Paths
   "Main": {
     "Addons": [
       "WORKSHOP_ID1",
-      "WORKSHOP_ID2", 
+      "WORKSHOP_ID2",
       // ...
     ],
     // ...
   }
 }
 ```
+
+## Config Options
+
+| Option                          | Default | Description                                                                                                                                                                                      |
+| ------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Addons`                        | `[]`    | Workshop IDs mounted and sent to clients on connect.                                                                                                                                             |
+| `BlockDisconnectMessages`       | `true`  | Suppress the loopback disconnect message clients get when the server mounts addons (reconnect). Set `false` to let it through.                                                                   |
+| `CacheClientsWithAddons`        | `true`  | Remember which addons a client already downloaded across reconnects, skipping re-download. `false` clears the list on disconnect.                                                                |
+| `CacheClientsDurationInSeconds` | `0.0`   | How long a client's download cache stays valid after going inactive, in seconds. `0` disables expiry (cache never clears from inactivity). Only applies when `CacheClientsWithAddons` is `true`. |
+| `ExtraAddonsTimeoutInSeconds`   | `10.0`  | Seconds to wait for a client to finish downloading a pending addon after reconnect before giving up on crediting it as downloaded.                                                               |
+| `RedownloadAddonOnMount`        | `false` | Force a re-download of an addon every time it's mounted, even if already installed.                                                                                                              |
 
 ## API for other plugins
 

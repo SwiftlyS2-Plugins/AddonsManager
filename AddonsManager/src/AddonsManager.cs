@@ -14,7 +14,7 @@ using AddonsManager.Contract;
 
 namespace AddonsManager;
 
-[PluginMetadata(Id = "AddonsManager", Version = "2.0.5", Name = "Addons Manager", Author = "Swiftly Development Team", Description = "No description.")]
+[PluginMetadata(Id = "AddonsManager", Version = "2.1.0", Name = "Addons Manager", Author = "Swiftly Development Team", Description = "No description.")]
 public class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
 {
     public IServiceProvider? ServiceProvider;

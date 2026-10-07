@@ -9,6 +9,8 @@ using AddonsManager.SteamWorkshop;
 using AddonsManager.Commands;
 using AddonsManager.Hooks;
 using AddonsManager.Clients;
+using AddonsManager.Api;
+using AddonsManager.Contract;
 
 namespace AddonsManager;
 
@@ -18,8 +20,11 @@ public class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
     public IServiceProvider? ServiceProvider;
     private CancellationTokenSource? _downloadProgressTimer;
 
+    private readonly AddonsApi _api = new();
+
     public override void ConfigureSharedInterface(IInterfaceManager interfaceManager)
     {
+        interfaceManager.AddSharedInterface<IAddonsManagerApi, AddonsApi>(IAddonsManagerApi.Key, _api);
     }
 
     public override void UseSharedInterface(IInterfaceManager interfaceManager)
@@ -52,6 +57,7 @@ public class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
         _ = ServiceProvider.GetRequiredService<AddonsCommands>();
         _ = ServiceProvider.GetRequiredService<AddonsClients>();
         _ = ServiceProvider.GetRequiredService<AddonsHooks>();
+        _api.Manager = workshopManager;
 
         _downloadProgressTimer = Core.Scheduler.RepeatBySeconds(1.0f, workshopManager.PrintDownloadProgress);
     }
@@ -61,6 +67,7 @@ public class AddonsManager(ISwiftlyCore core) : BasePlugin(core)
         // Stop the timer, then dispose (releases the Steam callback & mounted addons)
         try
         {
+            _api.Manager = null;
             _downloadProgressTimer?.Cancel();
             _downloadProgressTimer?.Dispose();
             _downloadProgressTimer = null;

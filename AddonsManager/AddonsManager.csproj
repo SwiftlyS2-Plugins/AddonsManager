@@ -29,7 +29,20 @@
 
   <ItemGroup>
     <Compile Remove="examples\**\*.cs" />
+
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AddonsManager.Contract/AddonsManager.Contract.csproj" />
+  </ItemGroup>
+
+  <Target Name="CopyContractToExports" AfterTargets="Build">
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../AddonsManager.Contract/build/$(TargetFramework)/AddonsManager.Contract.dll" DestinationFolder="$(MSBuildThisFileDirectory)resources/exports/" />
+  </Target>
+
+  <Target Name="CopyContractToPublishExports" AfterTargets="Publish" BeforeTargets="CreateZip">
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../AddonsManager.Contract/build/$(TargetFramework)/AddonsManager.Contract.dll" DestinationFolder="$(PublishDir)resources/exports/" />
+  </Target>
 
   <Target Name="CreateZip" AfterTargets="Publish">
     <ItemGroup>

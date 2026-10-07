@@ -194,6 +194,41 @@ public class AddonsWorkshopManager : IDisposable
         return true;
     }
 
+    private readonly List<string> _extraAddons = [];
+
+    public int ExtraAddonsCount => _extraAddons.Count;
+
+    public List<string> GetAllAddons() => Config.CurrentValue.Addons.Concat(_extraAddons).Distinct().ToList();
+
+    public List<string> GetMountedAddonsSnapshot() => [.. Utilities.GetMountedAddons()];
+
+    public bool AddExtraAddon(string workshopId)
+    {
+        if (!ulong.TryParse(workshopId, out var id) || id == 0)
+        {
+            Core.Logger.LogError("Invalid addon ID {AddonName}.", workshopId);
+            return false;
+        }
+
+        workshopId = id.ToString();
+        if (GetAllAddons().Contains(workshopId)) return false;
+
+        _extraAddons.Add(workshopId);
+
+        if (Callback_Ready) MountAddon(workshopId);
+        return true;
+    }
+
+    public bool RemoveExtraAddon(string workshopId)
+    {
+        if (!_extraAddons.Remove(workshopId)) return false;
+
+        if (Utilities.GetMountedAddons().Contains(workshopId)) UnmountAddon(workshopId);
+        return true;
+    }
+
+    private bool Callback_Ready => _downloadItemResult != null;
+
     public void RefreshAddons(bool reloadMap = false)
     {
         Core.Logger.LogDebug("Refreshing addons ([green]{addonsList}[default], bReloadMap: {reloadMap}).", Utilities.VectorToString(Utilities.GetMountedAddons()), reloadMap);
@@ -206,7 +241,7 @@ public class AddonsWorkshopManager : IDisposable
 
         var bAllAddonsMounted = true;
 
-        foreach (var addon in Config.CurrentValue.Addons)
+        foreach (var addon in GetAllAddons())
         {
             if (!MountAddon(addon, bAllowRedownload: reloadMap))
             {

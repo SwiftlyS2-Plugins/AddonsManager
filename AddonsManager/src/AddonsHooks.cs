@@ -207,7 +207,7 @@ public class AddonsHooks
             {
                 try
                 {
-                    if (config.CurrentValue.Addons.Count == 0) return next()();
+                    if (config.CurrentValue.Addons.Count == 0 && WorkshopManager.ExtraAddonsCount == 0) return next()();
 
                     var iAddon = ulong.TryParse(Utilities.GetCurrentWorkshopMap(), out var workshopId) ? workshopId : 0;
                     if (iAddon == 0) return next()();

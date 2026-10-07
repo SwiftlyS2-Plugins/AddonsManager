@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AddonsManager.Contract/AddonsManager.Contract.csproj" />
+  <Project Path="AddonsManager/AddonsManager.csproj" />
+</Solution>

@@ -46,6 +46,25 @@ sw_searchpath # View all the VPK Search Paths
 }
 ```
 
+## API for other plugins
+
+Reference `AddonsManager.Contract.dll` (build output of `AddonsManager.Contract`), then:
+
+```csharp
+private IAddonsManagerApi? _addons;
+
+public override void UseSharedInterface(IInterfaceManager interfaceManager)
+{
+    if (interfaceManager.TryGetSharedInterface<IAddonsManagerApi>(IAddonsManagerApi.Key, out var api))
+        _addons = api;
+}
+
+public override void Load(bool hotReload) => _addons?.AddAddon("WORKSHOP_ID");
+```
+
+- `AddAddon(id)` / `RemoveAddon(id)`: in memory only, call on every load. Config addons cannot be removed.
+- `GetAddons()` / `GetMountedAddons()`: read-only lists.
+
 ## Acknowledgements
 
 This plugin is a port of Source2ZE's MultiAddonManager for SwiftlyS2. It is released under GPL with credits given to the original code writers.

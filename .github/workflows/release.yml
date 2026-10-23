@@ -138,13 +138,13 @@ jobs:
           # Find next available tag/build number
           BASE_TAG="v${VERSION}"
           TAG="$BASE_TAG"
-          TITLE="${REPO_NAME} | ${BASE_TAG}"
+          TITLE="${BASE_TAG}"
           BUILD_NUM=1
 
           while gh release view "$TAG" &>/dev/null; do
             BUILD_NUM=$((BUILD_NUM + 1))
             TAG="${BASE_TAG}-${BUILD_NUM}"
-            TITLE="${REPO_NAME} | ${BASE_TAG}#${BUILD_NUM}"
+            TITLE="${BASE_TAG}#${BUILD_NUM}"
             echo "Tag $BASE_TAG exists, trying: $TAG"
           done
 

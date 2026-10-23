@@ -9,7 +9,7 @@
     "ReplyConnection": {
         "lib": "engine2",
         "windows": "48 8B C4 55 41 55 41 56",
-        "linux": "55 B9 ? ? ? ? 41 B8"
+        "linux": "55 B9 ? ? ? ? 41 B8 ? ? ? ? 48 89 E5"
     },
     // First call without args in func with "Saving existing workshop save file from %s\n"
     "ScriptGetAddon": {
